@@ -7,17 +7,6 @@ import sys
 import sqlite3
 
 
-class DialogUi(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.text = QTextEdit(self)
-        self.buttons = QDialogButtonBox(self)
-        self.buttons.clicked.connect(self.btn_event)
-
-    def btn_event(self):
-        print(self.sender())
-
-
 class MainWindow(MainUi, QMainWindow):
     def __init__(self):
         super().__init__()
