@@ -1,7 +1,7 @@
 import os
-
 from PyQt6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QWidget, QHBoxLayout, QPushButton, QLabel, \
-    QTextEdit, QDialogButtonBox, QInputDialog
+    QInputDialog
+from PyQt6.QtCore import Qt
 from main_Ui import MainUi
 import sys
 import sqlite3
@@ -14,6 +14,10 @@ class MainWindow(MainUi, QMainWindow):
         self.setWindowTitle("Планировщик R. edition")
         self.pushButton.clicked.connect(self.create_task)
         self.update_tasks()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_C:
+            self.create_task()
 
     def update_tasks(self):
         self.arr_btn = []
@@ -42,7 +46,9 @@ class MainWindow(MainUi, QMainWindow):
                 self.listWidget.setItemWidget(itemN, widget)
 
     def create_task(self):
+        self.hide()
         text, state = QInputDialog.getText(self, "", "Введите текст задачи:", )
+        self.show()
         if text and state:
             with sqlite3.connect("tasks.db") as conn:
                 c = conn.cursor()
