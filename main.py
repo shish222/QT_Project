@@ -1,8 +1,7 @@
 import os
-from PyQt6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QWidget, QHBoxLayout, QPushButton, QLabel, \
-    QInputDialog
+from PyQt6.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QWidget, QHBoxLayout, QPushButton, QLabel
 from PyQt6.QtCore import Qt
-from main_Ui import MainUi
+from Ui import MainUi, DialogUi
 import sys
 import sqlite3
 
@@ -25,11 +24,12 @@ class MainWindow(MainUi, QMainWindow):
         self.listWidget.clear()
         with sqlite3.connect("tasks.db") as conn:
             c = conn.cursor()
-            res = c.execute("SELECT id,text FROM tasks").fetchall()
+            res = c.execute("SELECT id,text,time FROM tasks").fetchall()
+            res = sorted(res, key=lambda x: int("".join(x[2].split(":"))))
             for i in res:
                 itemN = QListWidgetItem()
                 widget = QWidget()
-                widgetText = QLabel(i[1])
+                widgetText = QLabel(f"{i[1]} ;;; {i[2]}")
                 widgetButton = QPushButton("Удалить")
                 widgetButton.clicked.connect(self.delete_task)
                 self.arr_btn.append(widgetButton)
@@ -39,7 +39,6 @@ class MainWindow(MainUi, QMainWindow):
                 widgetLayout.addWidget(widgetButton)
                 widgetLayout.addStretch()
 
-                # widgetLayout.setSizeConstraint(QtWidgets.QLayout.sets)
                 widget.setLayout(widgetLayout)
                 itemN.setSizeHint(widget.sizeHint())
                 self.listWidget.addItem(itemN)
@@ -47,22 +46,27 @@ class MainWindow(MainUi, QMainWindow):
 
     def create_task(self):
         self.hide()
-        text, state = QInputDialog.getText(self, "", "Введите текст задачи:", )
+        dlg = DialogUi()
+        text = ""
+        if dlg.exec():
+            text = dlg.lineEdit.text()
+            time = dlg.timeEdit.text()
         self.show()
-        if text and state:
+        if text:
             with sqlite3.connect("tasks.db") as conn:
                 c = conn.cursor()
-                c.execute(f"INSERT INTO tasks (text) VALUES ('{text}')").fetchall()
+                c.execute(f"INSERT INTO tasks (text,time) VALUES ('{text}','{time}')").fetchall()
             self.update_tasks()
 
     def delete_task(self):
-        item = self.listWidget.currentItem()
         labl = self.arr_label[self.arr_btn.index(self.sender())]
+        task = labl.text().split(" ;;; ")
+        text = task[0]
+        time = task[1]
         with sqlite3.connect("tasks.db") as conn:
             c = conn.cursor()
-            c.execute(f"DELETE FROM tasks WHERE text='{labl.text()}'")
+            c.execute(f"DELETE FROM tasks WHERE text='{text}' AND time='{time}'")
             conn.commit()
-        # self.listWidget.insertItem(self.arr_btn.index(self.sender()))
         self.arr_btn.remove(self.sender())
         self.arr_label.remove(labl)
         self.update_tasks()
@@ -72,7 +76,7 @@ if __name__ == '__main__':
     if not os.path.exists('tasks.db'):
         with sqlite3.connect('tasks.db') as conn:
             c = conn.cursor()
-            c.execute("CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY, text TEXT)")
+            c.execute("CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY, text TEXT,time TEXT)")
             conn.commit()
     app = QApplication(sys.argv)
     plan = MainWindow()
